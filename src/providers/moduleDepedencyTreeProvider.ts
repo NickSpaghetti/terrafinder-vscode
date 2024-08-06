@@ -30,10 +30,27 @@ export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclM
 
     getChildren(element?: HclModuleViewModel | undefined): vscode.ProviderResult<HclModuleViewModel[]> {
         if(element) {
-            return Promise.resolve([element]);
+            return Promise.resolve(this.getDependenciesFromSource(element));
         } else {
             return Promise.resolve(this.getDependenciesInTerraformAsync());
         }
+    }
+
+    async getDependenciesFromSource(hclModule: HclModuleViewModel): Promise<HclModuleViewModel[]>{
+        const allModules: HclModuleViewModel[] = []
+        try {
+            const sourceText = await this.getSourceText(hclModule.modifiedSource,hclModule.sourceType);
+            if(sourceText == null){
+                return []
+            }
+            const modules = await this._hclService.findSourcesAsync(sourceText,hclModule.modifiedSource)
+            const moduleDepdnecies = await this.findTerraformModuleDepdendenciesAsync(modules)
+            allModules.push(...this.toModuleVm(moduleDepdnecies))
+        } catch(error){
+            console.log(error)
+            vscode.window.showErrorMessage("something went wrong when trying to find deps")
+        }
+        return allModules
     }
 
     async getDependenciesInTerraformAsync(): Promise<HclModuleViewModel[]>{
@@ -166,7 +183,10 @@ export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclM
             if(!key && !value){
                 continue
             }
-            hclModuleViewModel.push(new HclModuleViewModel(value.name,key,vscode.TreeItemCollapsibleState.Expanded))
+            if(value.modifiedSourceType == null || value.sourceType == null){
+                continue;
+            }
+            hclModuleViewModel.push(new HclModuleViewModel(value.name,key,value.source,value.modifiedSourceType,value.sourceType, vscode.TreeItemCollapsibleState.Expanded))
         }
         return hclModuleViewModel
     }

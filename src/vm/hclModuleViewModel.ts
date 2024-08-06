@@ -1,6 +1,7 @@
+import path from 'path';
 import * as vscode from 'vscode'
 
-export class moduleViewModel extends vscode.TreeItem {
+export class HclModuleViewModel extends vscode.TreeItem {
 
 	constructor(
 		public readonly label: string,
@@ -19,5 +20,5 @@ export class moduleViewModel extends vscode.TreeItem {
 		dark: path.join(__filename, '..', '..', 'resources', 'dark', 'dependency.svg')
 	};
 
-	contextValue = 'moduleViewModel';
+	contextValue = 'module';
 }

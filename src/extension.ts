@@ -1,6 +1,12 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import { ModuleDepedencyTreeProvider } from './providers/moduleDepedencyTreeProvider';
+import { HclService } from './services/aggregations/hclService';
+import { HclSourceService } from './services/orchestrations/hlcSourceService';
+import { HclVersionService } from './services/foundations/hlcVersionService';
+import { TerraformRegistryService } from './services/foundations/terraformRegistryService';
+import { TerraformRegistryBroker } from './brokers/apis/terraformRegistryBroker';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -34,7 +40,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(yup);
 
-	const disposableTerrafinderIdentifierActivityBar = vscode.commands.registerCommand('terrafinder.showActiveFileTerraformModules',() => {
+	const disposableTerrafinderIdentifierActivityBarNope = vscode.commands.registerCommand('terrafinder.showActiveFileTerraformModulesNOPE',() => {
 		const editor = vscode.window.activeTextEditor;
 		if (editor){
 			const panel = vscode.window.createWebviewPanel('terrafinderIdentifier',`${editor.document.fileName} modules`, vscode.ViewColumn.One);
@@ -43,7 +49,13 @@ export function activate(context: vscode.ExtensionContext) {
 			vscode.window.showErrorMessage("No active file open");
 		}
 	});
-	context.subscriptions.push(disposableTerrafinderIdentifierActivityBar);
+
+	const terraformModuleProvider = new ModuleDepedencyTreeProvider(new HclService(new HclSourceService(new HclVersionService(new TerraformRegistryService(new TerraformRegistryBroker())))));
+	vscode.window.registerTreeDataProvider("terraformModuleDependencies",terraformModuleProvider);
+
+	context.subscriptions.push(disposableTerrafinderIdentifierActivityBarNope);
+
+	
 }
 
 export function displayModules(text: string): string{
@@ -63,3 +75,4 @@ return `<!DOCTYPE html>
 
 // This method is called when your extension is deactivated
 export function deactivate() {}
+

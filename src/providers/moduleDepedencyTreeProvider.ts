@@ -30,11 +30,9 @@ export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclM
 
     getChildren(element?: HclModuleViewModel | undefined): vscode.ProviderResult<HclModuleViewModel[]> {
         if(element) {
-            return Promise.resolve(this.getDependenciesInTerraformAsync());
+            return Promise.resolve([element]);
         } else {
-            vscode.window.showErrorMessage("No dependincies found")
             return Promise.resolve(this.getDependenciesInTerraformAsync());
-            //return Promise.resolve([])
         }
     }
 
@@ -50,8 +48,8 @@ export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclM
             try {
                 const currentFileContent = Buffer.from(await vscode.workspace.fs.readFile(currentFile)).toString('utf-8')
                 const modules = await this._hclService.findSourcesAsync(currentFileContent,currentFile.path)
-                const moduleDepdnecies = await this.findTerraformModuleDepdendenciesAsync(modules,[])
-                modulesDependencies.concat(this.toModuleVm(moduleDepdnecies))
+                const moduleDepdnecies = await this.findTerraformModuleDepdendenciesAsync(modules)
+                modulesDependencies.push(...this.toModuleVm(moduleDepdnecies))
             } catch(error){
                 console.log(error)
                 vscode.window.showErrorMessage("something went wrong when trying to find deps")
@@ -60,25 +58,27 @@ export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclM
         return modulesDependencies
     }
 
-    async findTerraformModuleDepdendenciesAsync(modules: Array<Module>, dependincies: Array<Module>): Promise<Module[]> {
-        while(modules.length > 0){
-            const module = modules.pop()
-            if(module == null || module.modifiedSourceType == null){
-                continue
+    async findTerraformModuleDepdendenciesAsync(rootModules: Array<Module>):Promise<Map<string,Module>>{
+        const allModules = new Map<string,Module>()
+        async function processModule(provider: ModuleDepedencyTreeProvider, module:Module) {
+            if(!module || !module.modifiedSourceType || allModules.has(module.source)){
+                return;
             }
-            const moduleSource = await this.getSourceText(module.modifiedSourceType, module.sourceType);
-            if(moduleSource == null || moduleSource === '') {
-                continue
+            allModules.set(module.source,module);
+            const moduleSource = await provider.getSourceText(module.modifiedSourceType,module.sourceType)
+            if(!moduleSource){
+                return
             }
-            const childModules = await this._hclService.findSourcesAsync(moduleSource,module.modifiedSourceType)
-            console.log(childModules)
-            const deps = await this.findTerraformModuleDepdendenciesAsync(childModules,modules)
-            dependincies.concat(deps)
-
+            const childModules = await provider._hclService.findSourcesAsync(moduleSource,module.modifiedSourceType)
+            for(const childModule of childModules){
+                await processModule(provider,childModule)
+            } 
         }
-        return dependincies
+        for (const rootModule of rootModules){
+            await processModule(this,rootModule)
+        }
+        return allModules;
     }
-
 
     async getSourceText(modifiedSourceType: string, sourceType: Nullable<SourceTypes>): Promise<Nullable<string>> {
         switch (sourceType) {
@@ -102,8 +102,9 @@ export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclM
         }
     }
 
+    //TODO: Add support for other repoHosts ie gitlib and bitbucket.  Note auth is only supported for github atm
     private async pullRemoteFilesAsync(url: string, repositoryHost: string = 'github', scope: string[] = ['repo']): Promise<string> {
-        const session = await vscode.authentication.getSession(repositoryHost,scope)
+        const session = await vscode.authentication.getSession(repositoryHost,scope,{createIfNone: true})
         if(session === undefined){
             vscode.window.showErrorMessage(`Token not found for ${repositoryHost}`)
             return ""
@@ -157,14 +158,15 @@ export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclM
         return ""
     }
 
-    private toModuleVm(modules: Array<Module>): Array<HclModuleViewModel> {
+    private toModuleVm(modules:  Map<string, Module>): Array<HclModuleViewModel> {
         const hclModuleViewModel: HclModuleViewModel[] = []
-        for(let i = 0; i < modules.length; i ++){
-            const module = modules[i]
-            if(module == null){
+        for(const mod of modules){
+            const key = mod[0]
+            const value = mod[1]
+            if(!key && !value){
                 continue
             }
-            hclModuleViewModel.push(new HclModuleViewModel(module.name,'',vscode.TreeItemCollapsibleState.Expanded))
+            hclModuleViewModel.push(new HclModuleViewModel(value.name,key,vscode.TreeItemCollapsibleState.Expanded))
         }
         return hclModuleViewModel
     }

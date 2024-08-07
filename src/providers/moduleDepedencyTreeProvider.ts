@@ -1,17 +1,14 @@
 import path from "path";
 import fs from "fs/promises"
-import { HclFileTypes } from "../models/hclFileTypes";
 import { SourceTypes } from "../models/sourceTypes";
 import { HclService } from "../services/aggregations/hclService";
-import { HclModule } from "../types/hclModule";
 import { Nullable } from "../types/nullable";
 import { HclModuleViewModel } from "../vm/hclModuleViewModel";
 import * as vscode from 'vscode';
 import { Module } from "../models/module";
 import gitUrlParse from "git-url-parse";
-import { error } from "console";
-import { json } from "stream/consumers";
-import { prototype } from "mocha";
+import { GITHUB_ROUTES } from "../utils/constants";
+import * as semver from "semver";
 
 export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclModuleViewModel>{
     
@@ -30,14 +27,16 @@ export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclM
 
     getChildren(element?: HclModuleViewModel | undefined): vscode.ProviderResult<HclModuleViewModel[]> {
         if(element) {
+            //get dependencies for each element in the activity bar
             return Promise.resolve(this.getDependenciesFromSource(element));
         } else {
+            //get dependincies in project files
             return Promise.resolve(this.getDependenciesInTerraformAsync());
         }
     }
 
-    async getDependenciesFromSource(hclModule: HclModuleViewModel): Promise<HclModuleViewModel[]>{
-        const allModules: HclModuleViewModel[] = []
+    async getDependenciesFromSource(hclModule: HclModuleViewModel): Promise<Array<HclModuleViewModel>>{
+        const allModules = new Set<HclModuleViewModel>()
         try {
             const sourceText = await this.getSourceText(hclModule.modifiedSource,hclModule.sourceType);
             if(sourceText == null){
@@ -45,15 +44,38 @@ export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclM
             }
             const modules = await this._hclService.findSourcesAsync(sourceText,hclModule.modifiedSource)
             const moduleDepdnecies = await this.findTerraformModuleDepdendenciesAsync(modules)
-            allModules.push(...this.toModuleVm(moduleDepdnecies))
+            for(const moduleDependency of this.toModuleVm(moduleDepdnecies)){
+                allModules.add(moduleDependency)
+            }
         } catch(error){
             console.log(error)
             vscode.window.showErrorMessage("something went wrong when trying to find deps")
         }
-        return allModules
+        return [...allModules]
     }
 
     async getDependenciesInTerraformAsync(): Promise<HclModuleViewModel[]>{
+        const terraformFiles = [...await vscode.workspace.findFiles('**/*.tf', '**/*.terraform')
+            ,...await vscode.workspace.findFiles('**/.hcl','**/*.terragrunt-cache')]
+        const modulesDependencies: Array<HclModuleViewModel> = []
+        while(terraformFiles.length > 0){
+            const currentFile = terraformFiles.pop()
+            if(currentFile == undefined){
+                continue
+            }
+            try {
+                const currentFileContent = Buffer.from(await vscode.workspace.fs.readFile(currentFile)).toString('utf-8')
+                const modules = await this._hclService.findSourcesAsync(currentFileContent,currentFile.path)
+                modulesDependencies.push(...this.toModuleVm(new Map(modules.map((m) => [m.source,m]))))
+            } catch(error){
+                console.log(error)
+                vscode.window.showErrorMessage("something went wrong when trying to find deps")
+            }
+        }
+        return modulesDependencies
+    }
+
+    async getAllDependenciesInTerraformAsync(): Promise<HclModuleViewModel[]>{
         const terraformFiles = [...await vscode.workspace.findFiles('**/*.tf', '**/*.terraform')
             ,...await vscode.workspace.findFiles('**/.hcl','**/*.terragrunt-cache')]
         const modulesDependencies: Array<HclModuleViewModel> = []
@@ -102,14 +124,27 @@ export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclM
             case SourceTypes.url || SourceTypes.ssh:
                 return await this.pullRemoteFilesAsync(modifiedSourceType)
             case SourceTypes.path:
-                 const moduleFilePath = path.join(modifiedSourceType)
+                 if(modifiedSourceType.startsWith("file:///https://")){
+                    return this.pullRemoteFilesAsync(modifiedSourceType.replace('file:///',''))
+                 }
+                 let moduleFilePath = path.join(modifiedSourceType)
                  try{
-                    await fs.access(moduleFilePath)
+                    const modUrl = new URL(moduleFilePath)
+                    const stat = await fs.lstat(modUrl.pathname)
+                    if(stat.isDirectory()){
+                        moduleFilePath = path.join(modUrl.pathname,'main.tf')
+                        await fs.access(moduleFilePath)
+                        return (await fs.readFile(moduleFilePath)).toString()
+                    }
+                    else if (stat.isFile()){
+                        await fs.access(modUrl.pathname)
+                        return (await fs.readFile(moduleFilePath)).toString()
+                    }
                  } catch (error) {
                     vscode.window.showInformationMessage(`cannot access ${moduleFilePath}`)
                     return null
                  }
-                return (await fs.readFile(moduleFilePath)).toString()
+                 return null
             case SourceTypes.registry:
                 return null;
             case SourceTypes.privateRegistry:
@@ -137,27 +172,34 @@ export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclM
     }
 
     private async getContentFromGithubAsync(token: string, url: string): Promise<string>{
-        const parsedGithubUrl = gitUrlParse(url)
+        let parsedGithubUrl = gitUrlParse(url)
+        const ref = semver.parse(parsedGithubUrl.ref)?.raw ?? ''
         try{
             const headers = new Headers({
                 'Accept':'application/vnd.github+json',
                 'Authorization': `Bearer ${token}`
             })
             let urlPath = parsedGithubUrl.filepath
-            if(parsedGithubUrl.filepath === ''){
+            if(!parsedGithubUrl.filepath.endsWith('.tf') && parsedGithubUrl.filepath !== ''){
+                urlPath = `${path.join(parsedGithubUrl.filepath,'main.tf')}`
+                if(url.includes(`${parsedGithubUrl.name}/${GITHUB_ROUTES.TREE}`) && ref === ''){
+                    urlPath = `${path.join(parsedGithubUrl.ref,parsedGithubUrl.filepath,'main.tf')}`
+                }
+            }
+            else if (parsedGithubUrl.filepath === ''){
                 urlPath = 'main.tf'
             }
-            else if (!parsedGithubUrl.filepath.endsWith('.tf')){
-                urlPath = `${path.join(parsedGithubUrl.filepath,'main.tf')}`
-            }
-            const contentUrl = `https://api.github.com/repos/${parsedGithubUrl.owner}/${parsedGithubUrl.name}/contents/${urlPath}?ref=${parsedGithubUrl.ref}`
+            
+            const contentUrl = `https://api.github.com/repos/${parsedGithubUrl.owner}/${parsedGithubUrl.name}/contents/${urlPath}${ref === '' ? '' : `?ref=${ref}`}`
             const response = await fetch(contentUrl, {
                 method: 'GET',
                 headers: headers
             });
             console.log(response.statusText)
             if(!response.ok){
-                vscode.window.showErrorMessage(`error fetching data from ${url}: ${response.statusText}`)
+                const err = `error fetching data from ${url}: ${response.statusText}`
+                console.log(err)
+                vscode.window.showErrorMessage(err)
                 return ""
             }
             const jsonResponse = await response.json() as any
@@ -169,6 +211,7 @@ export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclM
             }
         } catch(e){
             console.log(e)
+            console.log(url)
             vscode.window.showErrorMessage(`Failed to get file from ${url}`)
         }
                 

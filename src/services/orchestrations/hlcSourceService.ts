@@ -7,19 +7,19 @@ export class HclSourceService {
     constructor(private readonly hlcVersionService: HclVersionService) {
     }
     GetSourceType = (source: string): Nullable<SourceTypes> => {
-        if(this.IsHost(source)){
+        if (this.IsHost(source)) {
             return SourceTypes.url;
         }
-        if(this.IsFilePath(source)){
+        if (this.IsFilePath(source)) {
             return SourceTypes.path;
         }
-        if(this.IsSSH(source)){
+        if (this.IsSSH(source)) {
             return SourceTypes.ssh;
         }
-        if(this.IsPrivateRegistry(source)){
+        if (this.IsPrivateRegistry(source)) {
             return SourceTypes.privateRegistry;
         }
-        if(this.IsRegistry(source)){
+        if (this.IsRegistry(source)) {
             return SourceTypes.registry;
         }
         return null;
@@ -49,12 +49,12 @@ export class HclSourceService {
     //https://github.com/gruntwork-io/terraform-aws-lambda/tree/v0.21.6/modules
     //https://github.com/gruntwork-io/terraform-aws-lambda/blob/v0.21.6/modules/keep-warm/main.tf
     sshToUrl = (source: string): string => {
-        if(!this.IsSSH(source)){
+        if (!this.IsSSH(source)) {
             return source;
         }
 
-        let hostName = source.substring(source.indexOf("@") + 1).replace(":","/");
-        try{
+        let hostName = source.substring(source.indexOf("@") + 1).replace(":", "/");
+        try {
             let uri = new URL(source);
             let isRef = uri.searchParams.get("ref") !== null
             let branchTag = uri.searchParams.get("ref") ?? "main";
@@ -63,19 +63,19 @@ export class HclSourceService {
                     ? GITHUB_ROUTES.BLOB
                     : GITHUB_ROUTES.TREE;
 
-            let fullName = hostName.replace(FileExtensions.GIT,"");
-            if(isRef){
-                fullName = fullName.replace(`?ref=${branchTag}`,"")
+            let fullName = hostName.replace(FileExtensions.GIT, "");
+            if (isRef) {
+                fullName = fullName.replace(`?ref=${branchTag}`, "")
             }
-            if(fullName.indexOf("//") === -1){
+            if (fullName.indexOf("//") === -1) {
                 fullName += `/${dirName}/${branchTag}/`
             }
-            else{
-                fullName = fullName.replace("//",`/${dirName}/${branchTag}/`)
+            else {
+                fullName = fullName.replace("//", `/${dirName}/${branchTag}/`)
             }
 
             return `https://${fullName}`;
-        }catch (ex){
+        } catch (ex) {
             return source;
         }
     }
@@ -84,7 +84,7 @@ export class HclSourceService {
         let providerType = moduleName.includes(TERRAFORM_SYNTAX.REQUIRED_PROVIDERS)
             ? TERRAFORM_REGISTRY_ROUTES.PROVIDERS
             : TERRAFORM_REGISTRY_ROUTES.MODULES
-        let version = await this.hlcVersionService.getTerraformProviderVersionAsync(source, providerType,sourceVersion ?? '')
+        let version = await this.hlcVersionService.getTerraformProviderVersionAsync(source, providerType, sourceVersion ?? '')
         const sourcePaths = source.split("/");
         let sourcePath = source;
         if (sourcePaths.length === 1 && providerType == TERRAFORM_REGISTRY_ROUTES.PROVIDERS) {
@@ -96,13 +96,18 @@ export class HclSourceService {
     }
 
     pathToUrl = (source: string, sourcePageUrl: string): string => {
-        if(!this.IsFilePath(source)){
+        if (!this.IsFilePath(source)) {
             throw new Error(`${source} is not of type ${SourceTypes.path.toString()}`);
         }
-        return new URL(source,sourcePageUrl).href
+
+        //./ on a url will remove the last path but in terraform it means a directory below current directory
+        if(source.startsWith("./") && !sourcePageUrl.endsWith('/')){
+            return new URL(source,`${sourcePageUrl}/`).href
+        }
+        return new URL(source, sourcePageUrl).href
     }
 
-    IsHost = (source: string): boolean =>  {
+    IsHost = (source: string): boolean => {
         try {
             let url = new URL(source);
             const position = url.toString().lastIndexOf(url.protocol);
@@ -111,17 +116,17 @@ export class HclSourceService {
                 position === 0 && ['http:', 'https:'].indexOf(url.protocol) !== -1 && url.toString().length - domainExtensionPosition > 2
             );
         }
-        catch($error){
+        catch ($error) {
             return false;
         }
     }
 
     IsPrivateRegistry = (source: string): boolean => {
-        let stripedHttpSource = source.replace("https://","")
-                                    .replace("http://","");
+        let stripedHttpSource = source.replace("https://", "")
+            .replace("http://", "");
 
-        let privateRegistryHostNames =  stripedHttpSource.substring(0,stripedHttpSource.indexOf('/'))
-                                                        .split(".");
+        let privateRegistryHostNames = stripedHttpSource.substring(0, stripedHttpSource.indexOf('/'))
+            .split(".");
         return privateRegistryHostNames.length === 3 && privateRegistryHostNames[1] === 'terraform' && privateRegistryHostNames[2] === "io";
 
     }

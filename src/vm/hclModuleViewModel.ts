@@ -1,12 +1,18 @@
+import { publicDecrypt } from 'crypto';
+import path from 'path';
 import * as vscode from 'vscode'
+import { SourceTypes } from '../models/sourceTypes';
 
-export class moduleViewModel extends vscode.TreeItem {
+export class HclModuleViewModel extends vscode.TreeItem {
 
 	constructor(
 		public readonly label: string,
 		private readonly version: string,
+		public readonly source: string,
+		public readonly modifiedSource: string,
+		public readonly sourceType: SourceTypes,
 		public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-		public readonly command?: vscode.Command
+		public readonly command?: vscode.Command,
 	) {
 		super(label, collapsibleState);
 
@@ -19,5 +25,5 @@ export class moduleViewModel extends vscode.TreeItem {
 		dark: path.join(__filename, '..', '..', 'resources', 'dark', 'dependency.svg')
 	};
 
-	contextValue = 'moduleViewModel';
+	contextValue = 'module';
 }

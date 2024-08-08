@@ -9,11 +9,20 @@ import { Module } from "../models/module";
 import gitUrlParse from "git-url-parse";
 import { GITHUB_ROUTES } from "../utils/constants";
 import * as semver from "semver";
+import Pako from "pako";
 
 export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclModuleViewModel>{
     
     constructor(private readonly _hclService: HclService){}
-
+    private _terraformCache = new Map<string,Uint8Array>()
+    private addToTerraformCache(key: string, value: string){
+        this._terraformCache.set(key,Pako.deflate(value))
+    }
+    private getFromTerraformCache(key: string): string{
+       const result = this._terraformCache.get(key) ?? new Uint8Array
+       const value = Pako.inflate(result,{"to":"string"})
+       return value
+    }
     private _onDidChangeTreeData: vscode.EventEmitter<HclModuleViewModel | undefined | void> = new vscode.EventEmitter<HclModuleViewModel | undefined | void>();
     onDidChangeTreeData?: vscode.Event<void | HclModuleViewModel | HclModuleViewModel[] | null | undefined> | undefined;
 
@@ -31,6 +40,7 @@ export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclM
             return Promise.resolve(this.getDependenciesFromSource(element));
         } else {
             //get dependincies in project files
+            this._terraformCache.clear()
             return Promise.resolve(this.getDependenciesInTerraformAsync());
         }
     }
@@ -124,27 +134,10 @@ export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclM
             case SourceTypes.url || SourceTypes.ssh:
                 return await this.pullRemoteFilesAsync(modifiedSourceType)
             case SourceTypes.path:
-                 if(modifiedSourceType.startsWith("file:///https://")){
+                 if(modifiedSourceType.startsWith("file:///https://")){      
                     return this.pullRemoteFilesAsync(modifiedSourceType.replace('file:///',''))
                  }
-                 let moduleFilePath = path.join(modifiedSourceType)
-                 try{
-                    const modUrl = new URL(moduleFilePath)
-                    const stat = await fs.lstat(modUrl.pathname)
-                    if(stat.isDirectory()){
-                        moduleFilePath = path.join(modUrl.pathname,'main.tf')
-                        await fs.access(moduleFilePath)
-                        return (await fs.readFile(moduleFilePath)).toString()
-                    }
-                    else if (stat.isFile()){
-                        await fs.access(modUrl.pathname)
-                        return (await fs.readFile(moduleFilePath)).toString()
-                    }
-                 } catch (error) {
-                    vscode.window.showInformationMessage(`cannot access ${moduleFilePath}`)
-                    return null
-                 }
-                 return null
+                 return await this.getLocalFilesAsync(modifiedSourceType)
             case SourceTypes.registry:
                 return null;
             case SourceTypes.privateRegistry:
@@ -154,21 +147,52 @@ export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclM
         }
     }
 
+    private async getLocalFilesAsync(modifiedSourceType: string): Promise<Nullable<string>>{
+        if(this._terraformCache.has(modifiedSourceType)){
+            return this.getFromTerraformCache(modifiedSourceType)
+        }
+        let moduleFilePath = path.join(modifiedSourceType)
+        try{
+           const modUrl = new URL(moduleFilePath)
+           const stat = await fs.lstat(modUrl.pathname)
+           if(stat.isDirectory()){
+               moduleFilePath = path.join(modUrl.pathname,'main.tf')
+               await fs.access(moduleFilePath)
+               const result = (await fs.readFile(moduleFilePath)).toString()
+               this.addToTerraformCache(modifiedSourceType,result)
+               return result
+           }
+           else if (stat.isFile()){
+               await fs.access(modUrl.pathname)
+               const result = (await fs.readFile(moduleFilePath)).toString()
+               this.addToTerraformCache(modifiedSourceType,result)
+               return result
+           }
+        } catch (error) {
+           vscode.window.showInformationMessage(`cannot access ${moduleFilePath}`)
+        }
+        return null
+    }
+
     //TODO: Add support for other repoHosts ie gitlib and bitbucket.  Note auth is only supported for github atm
     private async pullRemoteFilesAsync(url: string, repositoryHost: string = 'github', scope: string[] = ['repo']): Promise<string> {
+        if(this._terraformCache.has(url)){
+            return this.getFromTerraformCache(url)
+        }
         const session = await vscode.authentication.getSession(repositoryHost,scope,{createIfNone: true})
         if(session === undefined){
             vscode.window.showErrorMessage(`Token not found for ${repositoryHost}`)
             return ""
         }
+        let result = ""
         switch(repositoryHost){
             case 'github':
-                return await this.getContentFromGithubAsync(session?.accessToken,url)
+                result = await this.getContentFromGithubAsync(session?.accessToken,url)
             default:
                 vscode.window.showErrorMessage(`${repositoryHost} not supported`)
         }
-
-        return ""
+        this.addToTerraformCache(url,result)
+        return result
     }
 
     private async getContentFromGithubAsync(token: string, url: string): Promise<string>{

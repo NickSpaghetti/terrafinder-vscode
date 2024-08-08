@@ -5,7 +5,7 @@ An easy way to identify your terraform modules without leaving your editor.
 ## Features
 See your terraform dependencies inside of vscode.
 
-![Terrafinder](/assets/demo.gif)
+![Terrafinder](/resources/demo.gif)
 
 ## Requirements
 

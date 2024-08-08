@@ -132,3 +132,4 @@ dist
 # vscode
 .vscode*
 *.vsix
+.DS_Store

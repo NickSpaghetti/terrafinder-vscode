@@ -188,6 +188,7 @@ export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclM
         switch(repositoryHost){
             case 'github':
                 result = await this.getContentFromGithubAsync(session?.accessToken,url)
+                break;
             default:
                 vscode.window.showErrorMessage(`${repositoryHost} not supported`)
         }
@@ -213,7 +214,6 @@ export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclM
             else if (parsedGithubUrl.filepath === ''){
                 urlPath = 'main.tf'
             }
-            
             const contentUrl = `https://api.github.com/repos/${parsedGithubUrl.owner}/${parsedGithubUrl.name}/contents/${urlPath}${ref === '' ? '' : `?ref=${ref}`}`
             const response = await fetch(contentUrl, {
                 method: 'GET',

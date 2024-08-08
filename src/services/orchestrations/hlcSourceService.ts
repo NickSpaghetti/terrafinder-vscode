@@ -100,10 +100,11 @@ export class HclSourceService {
             throw new Error(`${source} is not of type ${SourceTypes.path.toString()}`);
         }
 
-        //./ on a url will remove the last path but in terraform it means a directory below current directory
-        if(source.startsWith("./") && !sourcePageUrl.endsWith('/')){
+        //./ or ../ on a url will remove the last path but in terraform it means a directory below current directory
+        if(!sourcePageUrl.endsWith('/') && (!sourcePageUrl.endsWith('.tf') && !sourcePageUrl.endsWith('.hcl'))){
             return new URL(source,`${sourcePageUrl}/`).href
         }
+
         return new URL(source, sourcePageUrl).href
     }
 

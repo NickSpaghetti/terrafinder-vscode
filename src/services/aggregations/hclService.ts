@@ -117,7 +117,8 @@ export class HclService {
                     ...moduleSources?.entries() ?? new Map<string, TerraformModule>()]);
             for (let [_, module] of mergedSources) {
                 if (module.provider.source !== undefined) {
-                    const mod = await this.buildModuleSource(module,new URL(`file:///${fileSource}`));
+                    const url = !fileSource.startsWith(`file:///`) ? new URL(`file:///${fileSource}`) : new URL(fileSource)
+                    const mod = await this.buildModuleSource(module,url);
                     if (mod != null){
                         sources.push(mod);
                     }

@@ -24,8 +24,7 @@ export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclM
        return value
     }
     private _onDidChangeTreeData: vscode.EventEmitter<HclModuleViewModel | undefined | void> = new vscode.EventEmitter<HclModuleViewModel | undefined | void>();
-    onDidChangeTreeData?: vscode.Event<void | HclModuleViewModel | HclModuleViewModel[] | null | undefined> | undefined;
-
+    onDidChangeTreeData?: vscode.Event<void | HclModuleViewModel | HclModuleViewModel[] | null | undefined> = this._onDidChangeTreeData.event
     refresh(): void {
 		this._onDidChangeTreeData.fire();
 	}

@@ -42,13 +42,13 @@
         "category": "terrafinder"
       },
       {
-        "command": "terrafinder.showTime",
-        "title": "Current Time",
+        "command": "terrafinder.showDependency",
+        "title": "Show Dependency",
         "category": "terrafinder"
       },
       {
-        "command": "terrafinder.yup",
-        "title": "Yup",
+        "command": "terrafinder.refresh",
+        "title": "Refresh",
         "category": "terrafinder"
       }
     ]

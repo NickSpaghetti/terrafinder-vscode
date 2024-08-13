@@ -24,7 +24,7 @@ export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclM
        return value
     }
     private _onDidChangeTreeData: vscode.EventEmitter<HclModuleViewModel | undefined | void> = new vscode.EventEmitter<HclModuleViewModel | undefined | void>();
-    onDidChangeTreeData?: vscode.Event<void | HclModuleViewModel | HclModuleViewModel[] | null | undefined> | undefined;
+    onDidChangeTreeData?: vscode.Event<void | HclModuleViewModel | HclModuleViewModel[] | null | undefined> = this._onDidChangeTreeData.event
 
     refresh(): void {
 		this._onDidChangeTreeData.fire();
@@ -253,7 +253,18 @@ export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclM
             if(value.modifiedSourceType == null || value.sourceType == null){
                 continue;
             }
-            hclModuleViewModel.push(new HclModuleViewModel(value.name,key,value.source,value.modifiedSourceType,value.sourceType, vscode.TreeItemCollapsibleState.Expanded))
+            hclModuleViewModel.push(
+                new HclModuleViewModel(value.name,
+                                       key,
+                                       value.source,
+                                       value.modifiedSourceType,
+                                       value.sourceType, 
+                                       vscode.TreeItemCollapsibleState.Collapsed,
+                                       {
+                                        title: 'Show Dependency',
+                                        command: 'terrafinder.showDependency',
+                                        arguments: [value.modifiedSourceType, value.sourceType]
+                                       }))
         }
         return hclModuleViewModel
     }

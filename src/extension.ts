@@ -16,30 +16,6 @@ export function activate(context: vscode.ExtensionContext) {
 	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "terrafinder" is now active!');
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('terrafinder.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from Terrafinder!');
-	});
-
-	const timeDis = vscode.commands.registerCommand('terrafinder.showTime',() => {
-		let time = new Date().toDateString();
-		vscode.window.showInformationMessage(`it is currently ${time}`);
-	});
-
-	const yup = vscode.commands.registerCommand('terrafinder.yup',() => {
-		vscode.window.showInformationMessage(`yup`);
-	});
-
-	context.subscriptions.push(disposable);
-
-	context.subscriptions.push(timeDis);
-
-	context.subscriptions.push(yup);
-
 	const disposableTerrafinderIdentifierActivityBarNope = vscode.commands.registerCommand('terrafinder.showActiveFileTerraformModulesNOPE',() => {
 		const editor = vscode.window.activeTextEditor;
 		if (editor){
@@ -49,11 +25,14 @@ export function activate(context: vscode.ExtensionContext) {
 			vscode.window.showErrorMessage("No active file open");
 		}
 	});
+	context.subscriptions.push(disposableTerrafinderIdentifierActivityBarNope);
 
 	const terraformModuleProvider = new ModuleDepedencyTreeProvider(new HclService(new HclSourceService(new HclVersionService(new TerraformRegistryService(new TerraformRegistryBroker())))));
 	vscode.window.registerTreeDataProvider("terraformModuleDependencies",terraformModuleProvider);
-
-	context.subscriptions.push(disposableTerrafinderIdentifierActivityBarNope);
+	const refreshDepdnecies = vscode.commands.registerCommand('terrafinder.refresh',() => {
+		terraformModuleProvider.refresh()
+	});
+	context.subscriptions.push(refreshDepdnecies);
 
 	
 }

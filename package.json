@@ -37,18 +37,8 @@
         "category": "terrafinder"
       },
       {
-        "command": "terrafinder.helloWorld",
-        "title": "Hello World",
-        "category": "terrafinder"
-      },
-      {
-        "command": "terrafinder.showTime",
-        "title": "Current Time",
-        "category": "terrafinder"
-      },
-      {
-        "command": "terrafinder.yup",
-        "title": "Yup",
+        "command": "terrafinder.refresh",
+        "title": "Refresh",
         "category": "terrafinder"
       }
     ]

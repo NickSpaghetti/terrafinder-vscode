@@ -9,6 +9,8 @@ import { HclVersionService } from './services/foundations/hlcVersionService';
 import { TerraformRegistryService } from './services/foundations/terraformRegistryService';
 import { TerraformRegistryBroker } from './brokers/apis/terraformRegistryBroker';
 import { SourceTypes } from './models/sourceTypes';
+import { open } from 'fs';
+import { HclModuleViewModel } from './vm/hclModuleViewModel';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -45,12 +47,28 @@ export function activate(context: vscode.ExtensionContext) {
 	const refresh = vscode.commands.registerCommand('terrafinder.refresh',() => {
 		terraformModuleProvider.refresh()
 	});
+	const openModule = vscode.commands.registerCommand('terrafinder.openModule',async (module: HclModuleViewModel) => {
+		if(module == null){
+			vscode.window.showErrorMessage("Cannot find module");
+			return
+		}
+
+		if(module.sourceType == SourceTypes.registry || module.sourceType == SourceTypes.privateRegistry){
+			vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(module.modifiedSource));
+			return
+		}
+
+		const terraformText = await terraformModuleProvider.getSourceText(module.modifiedSource,module.sourceType)
+		if(terraformText == null || terraformText == ""){
+			vscode.window.showInformationMessage("Nothing to display");
+			return
+		}
+		await openNewTerraformFile(terraformText)
+	});
 	const showDepdendency = vscode.commands.registerCommand('terrafinder.showDependency', (modifiedSourceType: string, sourceType: SourceTypes) => {
 		let destination = modifiedSourceType
-		if(sourceType == SourceTypes.path){
-			if(modifiedSourceType.startsWith('file:////')){
-				destination = path.join(modifiedSourceType)
-			}
+		if(sourceType == SourceTypes.path && !modifiedSourceType.startsWith("https://")){
+			destination = path.join(modifiedSourceType)
 			if(!modifiedSourceType.endsWith('.tf')){
 				destination = path.join(modifiedSourceType,'main.tf')
 			}
@@ -58,7 +76,18 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(destination));
 	})
 	context.subscriptions.push(refresh);
+	context.subscriptions.push(openModule);
 	context.subscriptions.push(showDepdendency);
+
+	
+}
+
+export async function openNewTerraformFile(text: string) {
+	const document = await vscode.workspace.openTextDocument({
+		content: text,
+		language: 'terraform'
+	})
+	await vscode.window.showTextDocument(document);
 
 	
 }

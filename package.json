@@ -37,9 +37,13 @@
         "category": "terrafinder"
       },
       {
-        "command": "terrafinder.helloWorld",
-        "title": "Hello World",
-        "category": "terrafinder"
+        "command": "terrafinder.openModule",
+        "title": "Open Module",
+        "category": "terrafinder",
+        "icon":{
+          "dark": "resources/dark/document.svg",
+          "light": "resources/light/document.svg"
+        }
       },
       {
         "command": "terrafinder.showDependency",
@@ -49,9 +53,29 @@
       {
         "command": "terrafinder.refresh",
         "title": "Refresh",
-        "category": "terrafinder"
+        "category": "terrafinder",
+        "icon":{
+          "dark": "resources/dark/refresh.svg",
+          "light": "resources/light/refresh.svg"
+        }
+      }
+    ],
+    "menus": {
+    "view/title": [
+        {
+            "command": "terrafinder.refresh",
+            "when": "view == terraformModuleDependencies",
+            "group": "navigation"
+        }
+    ],
+    "view/item/context": [
+      {
+        "command": "terrafinder.openModule",
+        "when": "view == terraformModuleDependencies && viewItem == module",
+        "group": "inline"
       }
     ]
+}
   },
   "scripts": {
     "vscode:prepublish": "yarn run package",

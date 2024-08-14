@@ -18,7 +18,7 @@ export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclM
     private addToTerraformCache(key: string, value: string){
         this._terraformCache.set(key,Pako.deflate(value))
     }
-    private getFromTerraformCache(key: string): string{
+    public getFromTerraformCache(key: string): string{
        const result = this._terraformCache.get(key) ?? new Uint8Array
        const value = Pako.inflate(result,{"to":"string"})
        return value
@@ -75,7 +75,7 @@ export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclM
             }
             try {
                 const currentFileContent = Buffer.from(await vscode.workspace.fs.readFile(currentFile)).toString('utf-8')
-                const modules = await this._hclService.findSourcesAsync(currentFileContent,currentFile.path)
+                const modules = await this._hclService.findSourcesAsync(currentFileContent,currentFile.path.replace("file://",''))
                 modulesDependencies.push(...this.toModuleVm(new Map(modules.map((m) => [m.source,m]))))
             } catch(error){
                 console.log(error)
@@ -134,8 +134,8 @@ export class ModuleDepedencyTreeProvider implements vscode.TreeDataProvider<HclM
             case SourceTypes.url || SourceTypes.ssh:
                 return await this.pullRemoteFilesAsync(modifiedSourceType)
             case SourceTypes.path:
-                 if(modifiedSourceType.startsWith("file:///https://")){      
-                    return this.pullRemoteFilesAsync(modifiedSourceType.replace('file:///',''))
+                 if(modifiedSourceType.startsWith("https://")){      
+                    return this.pullRemoteFilesAsync(modifiedSourceType)
                  }
                  return await this.getLocalFilesAsync(modifiedSourceType)
             case SourceTypes.registry:

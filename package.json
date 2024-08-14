@@ -37,6 +37,16 @@
         "category": "terrafinder"
       },
       {
+        "command": "terrafinder.helloWorld",
+        "title": "Hello World",
+        "category": "terrafinder"
+      },
+      {
+        "command": "terrafinder.showDependency",
+        "title": "Show Dependency",
+        "category": "terrafinder"
+      },
+      {
         "command": "terrafinder.refresh",
         "title": "Refresh",
         "category": "terrafinder"

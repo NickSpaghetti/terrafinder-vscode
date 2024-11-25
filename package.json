@@ -58,6 +58,11 @@
           "dark": "resources/dark/refresh.svg",
           "light": "resources/light/refresh.svg"
         }
+      },
+      {
+        "command": "terrafinder.inspectTerraformModule",
+        "title": "Inspect Terraform Module",
+        "category": "terrafinder"
       }
     ],
     "menus": {

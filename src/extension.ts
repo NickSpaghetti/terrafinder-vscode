@@ -9,8 +9,9 @@ import { HclVersionService } from './services/foundations/hlcVersionService';
 import { TerraformRegistryService } from './services/foundations/terraformRegistryService';
 import { TerraformRegistryBroker } from './brokers/apis/terraformRegistryBroker';
 import { SourceTypes } from './models/sourceTypes';
-import { open } from 'fs';
 import { HclModuleViewModel } from './vm/hclModuleViewModel';
+import { ModuleCodeLenseProvider } from './providers/moduleCodeLenseProvider';
+import {Module} from './models/module';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -42,7 +43,31 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	context.subscriptions.push(disposableTerrafinderIdentifierActivityBarNope);
 
-	const terraformModuleProvider = new ModuleDepedencyTreeProvider(new HclService(new HclSourceService(new HclVersionService(new TerraformRegistryService(new TerraformRegistryBroker())))));
+	const hlcService = new HclService(new HclSourceService(new HclVersionService(new TerraformRegistryService(new TerraformRegistryBroker()))));
+	
+	vscode.languages.registerCodeLensProvider({language: 'terraform',scheme:'file'}, new ModuleCodeLenseProvider(hlcService));
+	context.subscriptions.push(vscode.commands.registerCommand('terrafinder.inspectTerraformModule',async (module: Module) => {
+		vscode.window.showInformationMessage(`Inspecting module ${module.name}`);
+		if(module == null || module.modifiedSourceType === null){
+			vscode.window.showErrorMessage("Cannot find module");
+			return
+		}
+
+		if(module.sourceType == SourceTypes.registry || module.sourceType == SourceTypes.privateRegistry){
+			vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(module.modifiedSourceType));
+			return
+		}
+
+		const terraformText = await terraformModuleProvider.getSourceText(module.modifiedSourceType,module.sourceType)
+		if(terraformText == null || terraformText == ""){
+			
+			return
+		}
+		await openNewTerraformFile(terraformText)
+
+	}));
+
+	const terraformModuleProvider = new ModuleDepedencyTreeProvider(hlcService);
 	vscode.window.registerTreeDataProvider("terraformModuleDependencies",terraformModuleProvider);
 	const refresh = vscode.commands.registerCommand('terrafinder.refresh',() => {
 		terraformModuleProvider.refresh()
@@ -74,7 +99,7 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 		}
 		vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(destination));
-	})
+	});
 	context.subscriptions.push(refresh);
 	context.subscriptions.push(openModule);
 	context.subscriptions.push(showDepdendency);

@@ -54,6 +54,14 @@ export class ModuleCodeLenseProvider implements CodeLensProvider {
            return range;
         }
 
+        if(module.name.startsWith(TERRAFORM_SYNTAX.TERRAFORM)){
+            let range = this.createRangeFromTerraform(document);
+            if(range === null){
+                throw Error(`Could not find ${module.name} in ${document.fileName}`);
+            }
+            return range;
+        }
+
         const moduleExp = new RegExp(`module\\s+"(${module.name})"\\s+{[^}]`,"g");
         let range = this.createRange(document,moduleExp);
         if(range === null){
@@ -104,6 +112,18 @@ export class ModuleCodeLenseProvider implements CodeLensProvider {
         if(startPos === null || endPos === null){
             return null;
         }
+        return new Range(startPos,endPos);
+    }
+
+    private createRangeFromTerraform(document: TextDocument){
+        const terraformSourceExp = /^\s*terraform\s*{[^}]*\bsource\s*=\s*["'][^"']*["']/gms
+        const doc = document.getText();
+        const firstSource = terraformSourceExp.exec(doc);
+        if(firstSource === null){
+            return null;
+        }
+        let startPos = document.positionAt(doc.indexOf(firstSource[0]));
+        let endPos = document.positionAt(doc.indexOf(firstSource[0]));
         return new Range(startPos,endPos);
     }
 

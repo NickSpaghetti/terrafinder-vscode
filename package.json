@@ -9,7 +9,26 @@
   "categories": [
     "Other"
   ],
+  "activationEvents": [
+    "onLanguage:terraform"
+  ],
   "main": "./dist/extension.js",
+  "languages": [
+    {
+      "id": "terraform",
+      "extensions": [
+        ".hcl",
+        ".tf"
+      ],
+      "aliases": [
+        "HCL",
+        "hcl",
+        "tf",
+        "Terraform",
+        "terraform"
+      ]
+    }
+  ],
   "contributes": {
     "viewsContainers": {
       "activitybar": [
@@ -40,7 +59,7 @@
         "command": "terrafinder.openModule",
         "title": "Open Module",
         "category": "terrafinder",
-        "icon":{
+        "icon": {
           "dark": "resources/dark/document.svg",
           "light": "resources/light/document.svg"
         }
@@ -54,7 +73,7 @@
         "command": "terrafinder.refresh",
         "title": "Refresh",
         "category": "terrafinder",
-        "icon":{
+        "icon": {
           "dark": "resources/dark/refresh.svg",
           "light": "resources/light/refresh.svg"
         }
@@ -66,21 +85,21 @@
       }
     ],
     "menus": {
-    "view/title": [
+      "view/title": [
         {
-            "command": "terrafinder.refresh",
-            "when": "view == terraformModuleDependencies",
-            "group": "navigation"
+          "command": "terrafinder.refresh",
+          "when": "view == terraformModuleDependencies",
+          "group": "navigation"
         }
-    ],
-    "view/item/context": [
-      {
-        "command": "terrafinder.openModule",
-        "when": "view == terraformModuleDependencies && viewItem == module",
-        "group": "inline"
-      }
-    ]
-}
+      ],
+      "view/item/context": [
+        {
+          "command": "terrafinder.openModule",
+          "when": "view == terraformModuleDependencies && viewItem == module",
+          "group": "inline"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "yarn run package",
@@ -114,5 +133,6 @@
     "typescript": "^5.4.5",
     "webpack": "^5.92.1",
     "webpack-cli": "^5.1.4"
-  }
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

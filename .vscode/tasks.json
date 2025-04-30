@@ -1,0 +1,14 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "yarn: compile",
+        "type": "shell",
+        "command": "yarn",
+        "args": ["compile"],
+        "group": "build",
+        "problemMatcher": ["$webpack"]
+      }
+    ]
+  }
+  

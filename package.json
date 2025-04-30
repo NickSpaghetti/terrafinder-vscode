@@ -82,6 +82,16 @@
         "command": "terrafinder.inspectTerraformModule",
         "title": "Inspect Terraform Module",
         "category": "terrafinder"
+      },
+      {
+        "command": "terrafinder.enableCodeLens",
+        "title": "Enable Terrafinder codelense",
+        "category": "terrafinder"
+      },
+      {
+        "command": "terrafinder.disableCodeLens",
+        "title": "Disable Terrafinder codelense",
+        "category": "terrafinder"
       }
     ],
     "menus": {

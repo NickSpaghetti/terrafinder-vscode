@@ -3,8 +3,10 @@ import { HclService } from "../services/aggregations/hclService";
 import { Module } from "../models/module";
 import { Nullable } from "../types/nullable";
 import { TERRAFORM_SYNTAX } from "../utils/constants";
+import * as vscode from 'vscode';
 
 export class ModuleCodeLenseProvider implements CodeLensProvider {
+    private enabled: boolean = true;
     private _onDidChangeCodeLenses: EventEmitter<void> = new EventEmitter<void>();
     public readonly onDidChangeCodeLenses?: Event<void> | undefined = this._onDidChangeCodeLenses.event;
 
@@ -14,11 +16,25 @@ export class ModuleCodeLenseProvider implements CodeLensProvider {
         })
     }
 
+    public enable(): void {
+        this.enabled = true;
+      }
+    
+      public disable(): void {
+        this.enabled = false;
+      }
+
     provideCodeLenses(document: TextDocument, token: CancellationToken): ProviderResult<CodeLens[]> {
+        if(!this.enabled){
+            return;
+        }
         return Promise.resolve(this.getCodeLensesFromDocument(document));
     }
     resolveCodeLens?(codeLens: CodeLens, token: CancellationToken): ProviderResult<CodeLens> {
-        return codeLens;
+        if(this.enabled){
+            return codeLens;
+        }
+        return null;
     }
 
     async getCodeLensesFromDocument(document: TextDocument): Promise<Array<CodeLens>> {

@@ -44,15 +44,15 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(disposableTerrafinderIdentifierActivityBarNope);
 
 	const hlcService = new HclService(new HclSourceService(new HclVersionService(new TerraformRegistryService(new TerraformRegistryBroker()))));
-	
-	vscode.languages.registerCodeLensProvider({language: 'terraform',scheme:'file'}, new ModuleCodeLenseProvider(hlcService));
+	const terraformModuleProvider = new ModuleDepedencyTreeProvider(hlcService);
+	const moduleCodeLenseProvider = new ModuleCodeLenseProvider(hlcService);
+
 	context.subscriptions.push(vscode.commands.registerCommand('terrafinder.inspectTerraformModule',async (module: Module) => {
-		vscode.window.showInformationMessage(`Inspecting module ${module.name}`);
 		if(module == null || module.modifiedSourceType === null){
 			vscode.window.showErrorMessage("Cannot find module");
 			return
 		}
-
+		vscode.window.showInformationMessage(`Inspecting module ${module.name}`);
 		if(module.sourceType == SourceTypes.registry || module.sourceType == SourceTypes.privateRegistry){
 			vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(module.modifiedSourceType));
 			return
@@ -67,7 +67,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 	}));
 
-	const terraformModuleProvider = new ModuleDepedencyTreeProvider(hlcService);
 	vscode.window.registerTreeDataProvider("terraformModuleDependencies",terraformModuleProvider);
 	const refresh = vscode.commands.registerCommand('terrafinder.refresh',() => {
 		terraformModuleProvider.refresh()
@@ -100,6 +99,23 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 		vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(destination));
 	});
+
+	context.subscriptions.push(
+		vscode.languages.registerCodeLensProvider({language:'tf',scheme:'file'}, moduleCodeLenseProvider)
+	);
+	context.subscriptions.push(
+		vscode.commands.registerCommand("terrafinder.enableCodeLens", () => {
+			moduleCodeLenseProvider.enable();
+			vscode.workspace.getConfiguration("terrafinder-enableCodeLens").update("terrafinder",true,true);
+		})
+	  );
+	  context.subscriptions.push(
+		vscode.commands.registerCommand("terrafinder.disableCodeLens", () => {
+			moduleCodeLenseProvider.disable();
+			vscode.workspace.getConfiguration("terrafinder-enableCodeLens").update("enableCodeLens",false,false);
+		})
+	  );
+
 	context.subscriptions.push(refresh);
 	context.subscriptions.push(openModule);
 	context.subscriptions.push(showDepdendency);
@@ -110,7 +126,7 @@ export function activate(context: vscode.ExtensionContext) {
 export async function openNewTerraformFile(text: string) {
 	const document = await vscode.workspace.openTextDocument({
 		content: text,
-		language: 'terraform'
+		language: 'tf'
 	})
 	await vscode.window.showTextDocument(document);
 

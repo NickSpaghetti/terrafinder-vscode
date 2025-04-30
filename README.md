@@ -3,26 +3,18 @@
 An easy way to identify your terraform modules without leaving your editor.
 
 ## Features
-See your terraform dependencies inside of vscode.
+* Depdnency Tree - See your terraform dependencies inside of vscode.
 
-![Terrafinder](/resources/demo.gif)
+![Terrafinder Depdency Tree](/resources/demo.gif)
+
+* Code Lense - Inspect any terraform module in another window.  Works with modules on your local machine or hosted on github.
+
+![Terrafinder Code Lense](/resources/TerrafinderCodeLenseDemo.gif)
 
 ## Requirements
 
 You must be logged into your github account.  This extension queries the github api for terraform files on github.
 
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
+## Running locally
+This project uses yarn as the package manager.  To build run the following command ```yarn compile```.
+Go to the Run/Debug and select `Launch Terrafinder Extension`.

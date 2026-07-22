@@ -2,7 +2,14 @@
   "name": "terrafinder",
   "displayName": "Terrafinder",
   "description": "A quick way to find module source code and documentation without having to leave vs-code",
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "publisher": "NickSpaghetti",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NickSpaghetti/terrafinder-vscode.git"
+  },
+  "icon": "media/dep.png",
   "engines": {
     "vscode": "^1.91.0"
   },
@@ -120,7 +127,9 @@
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "yarn run compile-tests && yarn run compile && yarn run lint",
     "lint": "eslint src --ext ts",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "vscode:package": "vsce package",
+    "vscode:publish": "vsce publish"
   },
   "dependencies": {
     "@octokit/types": "^13.5.0",
@@ -138,6 +147,7 @@
     "@typescript-eslint/parser": "^7.11.0",
     "@vscode/test-cli": "^0.0.9",
     "@vscode/test-electron": "^2.4.0",
+    "@vscode/vsce": "^3.1.0",
     "eslint": "^8.57.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.4.5",

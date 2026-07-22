@@ -1,0 +1,14 @@
+.vscode/**
+.eslintrc.json
+tsconfig.json
+webpack.config.js
+.yarnrc
+yarn.lock
+src/**
+out/**
+resources/**
+node_modules/**
+**/*.map
+**/*.ts
+.gitignore
+vsc-extension-quickstart.md

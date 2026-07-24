@@ -39,8 +39,10 @@ export class HclSourceService {
                 return this.pathToUrl(source, url.href);
             case SourceTypes.registry:
                 return await this.registryToUrl(source, moduleName, sourceVersion);
-            case SourceTypes.privateRegistry:
-                return source;
+            case SourceTypes.privateRegistry: {
+                const privateRegistryUrl = this.tryParsePrivateRegistryUrl(source);
+                return privateRegistryUrl === null ? null : privateRegistryUrl.href;
+            }
             default:
                 return null;
         }
@@ -123,13 +125,21 @@ export class HclSourceService {
     }
 
     IsPrivateRegistry = (source: string): boolean => {
-        let stripedHttpSource = source.replace("https://", "")
-            .replace("http://", "");
+        return this.tryParsePrivateRegistryUrl(source) !== null;
+    }
 
-        let privateRegistryHostNames = stripedHttpSource.substring(0, stripedHttpSource.indexOf('/'))
-            .split(".");
-        return privateRegistryHostNames.length === 3 && privateRegistryHostNames[1] === 'terraform' && privateRegistryHostNames[2] === "io";
-
+    private tryParsePrivateRegistryUrl = (source: string): URL | null => {
+        try {
+            const normalizedSource = source.replace("https://", "").replace("http://", "");
+            const url = new URL(`https://${normalizedSource}`);
+            const isPrivateRegistryHost =
+                (url.hostname === "terraform.io" || url.hostname.endsWith(".terraform.io")) &&
+                url.username === "" &&
+                url.password === "";
+            return isPrivateRegistryHost ? url : null;
+        } catch {
+            return null;
+        }
     }
 
     IsRegistry = (source: string): boolean => {

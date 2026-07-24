@@ -2,7 +2,7 @@
   "name": "terrafinder",
   "displayName": "Terrafinder",
   "description": "A quick way to find module source code and documentation without having to leave vs-code",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "NickSpaghetti",
   "license": "SEE LICENSE IN LICENSE",
   "repository": {

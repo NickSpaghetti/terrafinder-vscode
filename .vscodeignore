@@ -12,3 +12,6 @@ node_modules/**
 **/*.ts
 .gitignore
 vsc-extension-quickstart.md
+.vscode-test.mjs
+Makefile
+.github/**

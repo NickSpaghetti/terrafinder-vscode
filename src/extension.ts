@@ -12,6 +12,7 @@ import { SourceTypes } from './models/sourceTypes';
 import { HclModuleViewModel } from './vm/hclModuleViewModel';
 import { ModuleCodeLenseProvider } from './providers/moduleCodeLenseProvider';
 import {Module} from './models/module';
+import { isSafeHttpUrl } from './utils/urlSafety';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -54,6 +55,10 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 		vscode.window.showInformationMessage(`Inspecting module ${module.name}`);
 		if(module.sourceType == SourceTypes.registry || module.sourceType == SourceTypes.privateRegistry){
+			if(!isSafeHttpUrl(module.modifiedSourceType)){
+				vscode.window.showErrorMessage("Cannot open module: unsafe source URL");
+				return
+			}
 			vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(module.modifiedSourceType));
 			return
 		}
@@ -72,12 +77,16 @@ export function activate(context: vscode.ExtensionContext) {
 		terraformModuleProvider.refresh()
 	});
 	const openModule = vscode.commands.registerCommand('terrafinder.openModule',async (module: HclModuleViewModel) => {
-		if(module == null){
+		if(module == null || module.modifiedSource == null){
 			vscode.window.showErrorMessage("Cannot find module");
 			return
 		}
 
 		if(module.sourceType == SourceTypes.registry || module.sourceType == SourceTypes.privateRegistry){
+			if(!isSafeHttpUrl(module.modifiedSource)){
+				vscode.window.showErrorMessage("Cannot open module: unsafe source URL");
+				return
+			}
 			vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(module.modifiedSource));
 			return
 		}
@@ -96,6 +105,9 @@ export function activate(context: vscode.ExtensionContext) {
 			if(!modifiedSourceType.endsWith('.tf')){
 				destination = path.join(modifiedSourceType,'main.tf')
 			}
+		} else if(!isSafeHttpUrl(destination)){
+			vscode.window.showErrorMessage("Cannot open dependency: unsafe source URL");
+			return
 		}
 		vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(destination));
 	});

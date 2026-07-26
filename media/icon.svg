@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="20 18 88 92">
+  <g transform="translate(-6,0)" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+    
+    <path d="M54 60 L54 78 M54 78 L30 92 M54 78 L78 92" stroke-width="2.6" stroke-dasharray="1 5" opacity="0.55"></path>
+    
+    <path d="M54 60 L78 74 L54 88 L30 74 Z M54 88 L54 106 M30 74 L30 92 M78 74 L78 92 M30 92 L54 106 M78 92 L54 106" stroke-width="3.2"></path>
+    
+    <path d="M54 42 L54 60 M54 60 L30 74 M54 60 L78 74" stroke-width="2.6" stroke-dasharray="1 5" opacity="0.55"></path>
+    
+    <path d="M54 42 L78 56 L54 70 L30 56 Z M54 70 L54 88 M30 56 L30 74 M78 56 L78 74 M30 74 L54 88 M78 74 L54 88" stroke-width="3.2"></path>
+    
+    <circle cx="82" cy="44" r="22" stroke-width="3.5"></circle>
+    <line x1="98.8" y1="60.8" x2="109.2" y2="71.2" stroke-width="4.8"></line>
+  </g></svg>

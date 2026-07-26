@@ -2,14 +2,14 @@
   "name": "terrafinder",
   "displayName": "Terrafinder",
   "description": "A quick way to find module source code and documentation without having to leave vs-code",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "publisher": "NickSpaghetti",
   "license": "SEE LICENSE IN LICENSE",
   "repository": {
     "type": "git",
     "url": "https://github.com/NickSpaghetti/terrafinder-vscode.git"
   },
-  "icon": "media/dep.png",
+  "icon": "media/icon.png",
   "engines": {
     "vscode": "^1.91.0"
   },
@@ -42,7 +42,7 @@
         {
           "id": "terraform-module-explorer",
           "title": "Terrafinder",
-          "icon": "media/dep.svg"
+          "icon": "media/icon.svg"
         }
       ]
     },
@@ -51,7 +51,7 @@
         {
           "id": "terraformModuleDependencies",
           "name": "Terraform Dependencies",
-          "icon": "media/dep.svg",
+          "icon": "media/icon.svg",
           "contextualTitle": "Terrafinder Explorer"
         }
       ]

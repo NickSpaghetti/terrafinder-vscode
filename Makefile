@@ -1,4 +1,4 @@
-.PHONY: install lint build compile-tests test audit audit-full package publish clean
+.PHONY: install lint build compile-tests test audit audit-full package publish start clean
 
 install:
 	yarn install --frozen-lockfile
@@ -29,6 +29,9 @@ package:
 
 publish:
 	yarn vsce publish
+
+start: build
+	code --extensionDevelopmentPath=$(CURDIR)
 
 clean:
 	rm -rf out dist *.vsix
